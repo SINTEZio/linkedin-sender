@@ -1,0 +1,145 @@
+Tab Tab1 = instance.ActiveTab;
+
+string bodyMes = project.Variables["body_text"].Value;
+bool blnSendSiteSpisok = Convert.ToBoolean(project.Variables["spisok_contact"].Value);
+string strLinkDoc = project.Variables["link_doc"].Value;
+string strSpisokContact = project.Variables["contact"].Value;
+int inSend = Convert.ToInt32(project.Variables["send_num"].Value);
+string strComment = string.Empty;
+string SpinResult = string.Empty;
+int interval = Convert.ToInt32(project.Variables["interval"].Value);
+int interval1 = Convert.ToInt32(project.Variables["interval1"].Value);
+IZennoList lsttemp = project.Lists["spisok_mes"];
+IZennoList lstSpisolContact = project.Lists["spisokContact"];
+//lsttemp.Clear(); //очищаем список
+
+int m=0;
+if (blnSendSiteSpisok) {
+	Tab1.Navigate("https://www.linkedin.com/mynetwork/invite-connect/connections/");
+	Tab1.WaitDownloading();
+	HtmlElementCollection colUsers = Tab1.FindElementsByXPath("//button[contains(@class, 'message')]");
+	foreach(HtmlElement elUserLink in colUsers) {
+		elUserLink.Click();
+		Thread.Sleep(3000);
+		strComment = project.Variables["body_text"].Value;
+		SpinResult = Macros.TextProcessing.Spintax(strComment);
+		Tab1.FindElementByXPath("//textarea[@name='message']", 0).SetValue(SpinResult,"Full");
+		instance.WaitFieldEmulationDelay();
+		if (strLinkDoc!=string.Empty) {
+			instance.SetFilesForUpload(strLinkDoc);
+			Tab1.FindElementByXPath("//form[contains(@id,'ember')]/label[contains(@class, 'upload')]",1).Click();
+			for (int y=0; y<20; y++) {
+				if (!Tab1.FindElementByXPath("//p[contains(@class, 'status')]",0).IsVoid) {
+					Thread.Sleep(5000);
+					break;
+				} else {
+					Thread.Sleep(500);
+					continue;
+				}
+			}
+		}
+		Tab1.FindElementByXPath("//textarea[@name='message']", 0).Click();
+		Tab1.FindElementByXPath("//button[contains(@class, 'send-button')]",0).Click();
+		// Эмулировать ввод текста
+		instance.SendText("{ENTER}", 15);
+		Thread.Sleep(3000);
+		project.SendInfoToLog(string.Format("Написали {0} сообщение(й)",m),true);
+		m++;
+		if (m==inSend) {
+			project.SendInfoToLog(string.Format("Рассылка заврешена. Отправил {0} контактам",m),true);
+			return "oki";
+		}
+		Thread.Sleep(new Random().Next(interval,interval1)*1000);
+	}
+}
+project.SendInfoToLog(String.Format("В списке для рассылки spisok_mes.txt содержится {0} записей", lsttemp.Count),true);
+
+string KontaktUrl = string.Empty;
+if (strSpisokContact==string.Empty) {
+	if (lsttemp.Count==0) {
+		project.SendInfoToLog("Нет ссылок на аккаунты профилей",true);
+		return "oki";
+	}
+	for (int i=0; i<lsttemp.Count; i++){
+		if (lsttemp.Count==0) {
+			project.SendInfoToLog("Закончились ссылки на аккаунты профилей",true);
+			return "oki";
+		}
+		KontaktUrl = lsttemp[0]; //0, если необходимо получить первый элемент
+		lsttemp.RemoveAt(0); //удаляю строку после взятия
+		Tab1.Navigate(KontaktUrl);
+		Tab1.WaitDownloading();
+		Tab1.FindElementByXPath("//button[contains(@class, 'message-anywhere-button')]", 0).Click();
+		Thread.Sleep(3000);
+		strComment = project.Variables["body_text"].Value;
+		SpinResult = Macros.TextProcessing.Spintax(strComment);
+		instance.SetFilesForUpload(strLinkDoc);
+		Tab1.FindElementByXPath("//form[contains(@id,'ember')]/label[contains(@class, 'upload')]",1).Click();
+		Tab1.FindElementByXPath("//textarea[@name='message']", 0).SetValue(SpinResult,"Full");
+		instance.WaitFieldEmulationDelay();
+		if (strLinkDoc!=string.Empty) {
+			for (int y=0; y<20; y++) {
+				if (!Tab1.FindElementByXPath("//p[contains(@class, 'status')]",0).IsVoid) {
+					Thread.Sleep(5000);
+					break;
+				} else {
+					Thread.Sleep(500);
+					continue;
+				}
+			}
+		}
+		Tab1.FindElementByXPath("//textarea[@name='message']", 0).Click();
+		// Эмулировать ввод текста
+		Tab1.FindElementByXPath("//button[contains(@class, 'send-button')]",0).Click();
+		instance.SendText("{ENTER}", 15);
+		Thread.Sleep(3000);
+		project.SendInfoToLog(string.Format("Написали {0} сообщение(й)",i++),true);
+		m++;
+		if (m==inSend) {
+			project.SendInfoToLog(string.Format("Рассылка заврешена. Отправил {0} контактам",m),true);
+			return "oki";
+		}
+	}
+} else {
+	for (int z=0; z<lstSpisolContact.Count; z++) {
+		if (lstSpisolContact.Count==0) {
+			project.SendInfoToLog("Нет ссылок на аккаунты профилей",true);
+			return "oki";
+		}
+		KontaktUrl = lstSpisolContact[0]; //0, если необходимо получить первый элемент
+		lstSpisolContact.RemoveAt(0); //удаляю строку после взятия
+		Tab1.Navigate(KontaktUrl);
+		Tab1.WaitDownloading();
+		Tab1.FindElementByXPath("//button[contains(@class, 'message-anywhere-button')]", 0).Click();
+		Thread.Sleep(3000);
+		strComment = project.Variables["body_text"].Value;
+		SpinResult = Macros.TextProcessing.Spintax(strComment);
+		instance.SetFilesForUpload(strLinkDoc);
+		Tab1.FindElementByXPath("//form[contains(@id,'ember')]/label[contains(@class, 'upload')]",1).Click();
+		Tab1.FindElementByXPath("//textarea[@name='message']", 0).SetValue(SpinResult,"Full");
+		instance.WaitFieldEmulationDelay();
+		if (strLinkDoc!=string.Empty) {
+			for (int y=0; y<20; y++) {
+				if (!Tab1.FindElementByXPath("//p[contains(@class, 'status')]",0).IsVoid) {
+					Thread.Sleep(10000);
+					break;
+				} else {
+					Thread.Sleep(5000);
+					continue;
+				}
+			}
+		}
+		Tab1.FindElementByXPath("//textarea[@name='message']", 0).Click();
+		// Эмулировать ввод текста
+		Tab1.FindElementByXPath("//button[contains(@class, 'send-button')]",0).Click();
+		instance.SendText("{ENTER}", 15);
+		Thread.Sleep(3000);
+		project.SendInfoToLog(string.Format("Написали {0} сообщение(й)",z++),true);
+		m++;
+		if (m==inSend) {
+			project.SendInfoToLog(string.Format("Рассылка заврешена. Отправил {0} контактам",m),true);
+			return "oki";
+		}
+	}	
+}
+Global.SpecialForms.AlertNotificator.Instance.DisplayAlert("Спасибо за работу!", "Разослал успешно!", null, 15000);
